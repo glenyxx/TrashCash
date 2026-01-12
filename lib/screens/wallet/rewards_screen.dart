@@ -146,10 +146,10 @@ class _RewardsStoreScreenState extends State<RewardsStoreScreen> {
               padding: const EdgeInsets.all(16),
               sliver: SliverGrid(
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: MediaQuery.of(context).size.width > 900 ? 3 : 2,
+                  crossAxisCount: MediaQuery.of(context).size.width > 900 ? 3 : (MediaQuery.of(context).size.width > 600 ? 2 : 1),
                   mainAxisSpacing: 16,
                   crossAxisSpacing: 16,
-                  childAspectRatio: 0.85,
+                  childAspectRatio: MediaQuery.of(context).size.width > 600 ? 0.85 : 1.1,
                 ),
                 delegate: SliverChildBuilderDelegate(
                       (context, index) => _buildRewardCard(filteredRewards[index]),

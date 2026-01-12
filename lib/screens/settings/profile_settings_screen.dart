@@ -54,30 +54,34 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDesktop = MediaQuery.of(context).size.width >= 1024;
+
     return Scaffold(
       backgroundColor: AppTheme.backgroundDark,
       body: SafeArea(
-        child: Row(
+        child: isDesktop
+            ? Row(
           children: [
-            // Sidebar
             _buildSidebar(),
-            // Main Content
-            Expanded(
-              child: CustomScrollView(
-                slivers: [
-                  SliverToBoxAdapter(child: _buildAppBar()),
-                  SliverToBoxAdapter(child: _buildProfileHeader()),
-                  SliverToBoxAdapter(child: _buildPersonalInfo()),
-                  SliverToBoxAdapter(child: _buildVerification()),
-                  SliverToBoxAdapter(child: _buildNotifications()),
-                  SliverToBoxAdapter(child: _buildDangerZone()),
-                  const SliverToBoxAdapter(child: SizedBox(height: 40)),
-                ],
-              ),
-            ),
+            Expanded(child: _buildMainContent()),
           ],
-        ),
+        )
+            : _buildMainContent(),
       ),
+    );
+  }
+
+  Widget _buildMainContent() {
+    return CustomScrollView(
+      slivers: [
+        SliverToBoxAdapter(child: _buildAppBar()),
+        SliverToBoxAdapter(child: _buildProfileHeader()),
+        SliverToBoxAdapter(child: _buildPersonalInfo()),
+        SliverToBoxAdapter(child: _buildVerification()),
+        SliverToBoxAdapter(child: _buildNotifications()),
+        SliverToBoxAdapter(child: _buildDangerZone()),
+        const SliverToBoxAdapter(child: SizedBox(height: 40)),
+      ],
     );
   }
 
@@ -239,30 +243,32 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
               color: Colors.white,
             ),
           ),
-          const Spacer(),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 200),
-            child: TextField(
-              style: const TextStyle(color: Colors.white, fontSize: 14),
-              decoration: InputDecoration(
-                hintText: 'Search collectors, zones...',
-                hintStyle: const TextStyle(color: AppTheme.textSecondary, fontSize: 14),
-                prefixIcon: const Icon(Icons.search, color: AppTheme.textSecondary, size: 20),
-                filled: true,
-                fillColor: const Color(0xFF283928),
-                contentPadding: const EdgeInsets.symmetric(vertical: 10),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide.none,
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: AppTheme.primary, width: 2),
+          const SizedBox(width: 24),
+          Expanded(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 400),
+              child: TextField(
+                style: const TextStyle(color: Colors.white, fontSize: 14),
+                decoration: InputDecoration(
+                  hintText: 'Search collectors, zones...',
+                  hintStyle: const TextStyle(color: AppTheme.textSecondary, fontSize: 14),
+                  prefixIcon: const Icon(Icons.search, color: AppTheme.textSecondary, size: 20),
+                  filled: true,
+                  fillColor: const Color(0xFF283928),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: AppTheme.primary, width: 2),
+                  ),
                 ),
               ),
             ),
           ),
-          const Spacer(),
+          const SizedBox(width: 24),
           IconButton(
             icon: Stack(
               children: [

@@ -116,10 +116,10 @@ class _BuyersMarketplaceScreenState extends State<BuyersMarketplaceScreen> {
               padding: const EdgeInsets.all(16),
               sliver: SliverGrid(
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: MediaQuery.of(context).size.width > 900 ? 3 : 2,
+                  crossAxisCount: MediaQuery.of(context).size.width > 900 ? 3 : (MediaQuery.of(context).size.width > 600 ? 2 : 1),
                   mainAxisSpacing: 16,
                   crossAxisSpacing: 16,
-                  childAspectRatio: 0.75,
+                  childAspectRatio: MediaQuery.of(context).size.width > 600 ? 0.75 : 1.0,
                 ),
                 delegate: SliverChildBuilderDelegate(
                       (context, index) => _buildProductCard(filteredProducts[index]),

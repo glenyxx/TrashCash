@@ -162,8 +162,8 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: MediaQuery.of(context).size.width > 600 ? 3 : 2,
               mainAxisSpacing: 12,
               crossAxisSpacing: 12,
               childAspectRatio: 1.2,
