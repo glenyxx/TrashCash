@@ -7,11 +7,13 @@ import '../screens/home/landing_page.dart';
 import '../screens/home/home_screen.dart';
 import '../screens/dashboard/buyers_marketplace_screen.dart';
 import '../screens/dashboard/collector_dashboard_screen.dart';
+import '../screens/ewaste/ewaste_locator_screen.dart';
 import '../screens/scan/qr_scanner_screen.dart';
 import '../screens/pickup/schedule_pickup_screen.dart';
 import '../screens/report/create_report_screen.dart';
 import '../screens/report/map_view_screen.dart';
 import '../screens/wallet/rewards_screen.dart';
+import '../screens/settings/profile_settings_screen.dart';
 
 class AppRoutes {
   // Auth Routes
@@ -32,6 +34,9 @@ class AppRoutes {
   static const String mapView = '/map-view';
   static const String wallet = '/wallet';
   static const String rewards = '/rewards';
+  static const String profileSettings = '/profile-settings';
+  static const String eWasteLocator = '/ewaste-locator';
+
 
   // Route Map
   static Map<String, WidgetBuilder> routes = {
@@ -48,6 +53,8 @@ class AppRoutes {
     createReport: (context) => const CreateReportScreen(),
     mapView: (context) => const MapViewScreen(),
     rewards: (context) => const RewardsStoreScreen(),
+    profileSettings: (context) => const ProfileSettingsScreen(),
+    eWasteLocator: (context) => const EWasteLocatorScreen(),
   };
 
   // Initial Route
