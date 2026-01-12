@@ -1,28 +1,30 @@
 import 'package:flutter/material.dart';
 import '../screens/auth/login_screen.dart';
-import '../screens/auth/register_screen.dart';
 import '../screens/auth/onboarding_welcome_screen.dart';
 import '../screens/auth/onboarding_rewards_screen.dart';
 import '../screens/auth/onboarding_impact_screen.dart';
+import '../screens/home/landing_page.dart';
 import '../screens/home/home_screen.dart';
+import '../screens/dashboard/buyers_marketplace_screen.dart';
+import '../screens/dashboard/collector_dashboard_screen.dart';
 import '../screens/scan/qr_scanner_screen.dart';
-import '../screens/scan/upload_proof_screen.dart';
 import '../screens/pickup/schedule_pickup_screen.dart';
 import '../screens/report/create_report_screen.dart';
 import '../screens/report/map_view_screen.dart';
-import '../screens/wallet/wallet_screen.dart';
 import '../screens/wallet/rewards_screen.dart';
 
 class AppRoutes {
   // Auth Routes
+  static const String landing = '/';
   static const String login = '/login';
-  static const String register = '/register';
   static const String onboardingWelcome = '/onboarding-welcome';
   static const String onboardingRewards = '/onboarding-rewards';
   static const String onboardingImpact = '/onboarding-impact';
 
   // Main App Routes
   static const String home = '/home';
+  static const String buyersMarketplace = '/buyers-marketplace';
+  static const String collectorDashboard = '/collector-dashboard';
   static const String scan = '/scan';
   static const String uploadProof = '/upload-proof';
   static const String schedulePickup = '/schedule-pickup';
@@ -33,21 +35,21 @@ class AppRoutes {
 
   // Route Map
   static Map<String, WidgetBuilder> routes = {
+    landing: (context) => const LandingPage(),
     login: (context) => const LoginScreen(),
-    register: (context) => const RegisterScreen(),
     onboardingWelcome: (context) => const OnboardingWelcomeScreen(),
     onboardingRewards: (context) => const OnboardingRewardsScreen(),
     onboardingImpact: (context) => const OnboardingImpactScreen(),
-    home: (context) => const HomeScreen(),
+    home: (context) => const CitizenDashboardScreen(),
+    buyersMarketplace: (context) => const BuyersMarketplaceScreen(),
+    collectorDashboard: (context) => const CollectorDashboardScreen(),
     scan: (context) => const QRScannerScreen(),
-    uploadProof: (context) => const UploadProofScreen(),
     schedulePickup: (context) => const SchedulePickupScreen(),
     createReport: (context) => const CreateReportScreen(),
     mapView: (context) => const MapViewScreen(),
-    wallet: (context) => const WalletScreen(),
-    rewards: (context) => const RewardsScreen(),
+    rewards: (context) => const RewardsStoreScreen(),
   };
 
   // Initial Route
-  static const String initialRoute = login;
+  static const String initialRoute = landing;
 }

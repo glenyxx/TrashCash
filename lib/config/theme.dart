@@ -8,7 +8,9 @@ class AppTheme {
   static const Color backgroundDark = Color(0xFF102210);
   static const Color surfaceDark = Color(0xFF1A2C1A);
   static const Color surfaceBorder = Color(0xFF283928);
+  static const Color textPrimary = Color(0xFF111811);
   static const Color textSecondary = Color(0xFF9DB99D);
+  static const Color borderLight = Color(0xFFE5E7EB);
 
   static const Color errorRed = Color(0xFFEF4444);
   static const Color successGreen = Color(0xFF22C55E);
@@ -110,7 +112,7 @@ class AppTheme {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: Color(0xFFE5E7EB)),
+        side: const BorderSide(color: borderLight),
       ),
       color: Colors.white,
       margin: EdgeInsets.zero,
@@ -179,7 +181,7 @@ class AppTheme {
 
     // Divider Theme
     dividerTheme: const DividerThemeData(
-      color: Color(0xFFE5E7EB),
+      color: borderLight,
       thickness: 1,
       space: 1,
     ),
