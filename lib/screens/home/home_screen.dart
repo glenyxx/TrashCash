@@ -461,7 +461,22 @@ class _CitizenDashboardScreenState extends State<CitizenDashboardScreen> {
       ),
       child: BottomNavigationBar(
         currentIndex: _currentIndex,
-        onTap: (index) => setState(() => _currentIndex = index),
+        onTap: (index) {
+          setState(() => _currentIndex = index);
+          switch (index) {
+            case 0: // Home - Stay on dashboard
+              break;
+            case 1: // Marketplace
+              Navigator.pushNamed(context, '/marketplace');
+              break;
+            case 2: // Map
+              Navigator.pushNamed(context, '/map');
+              break;
+            case 3: // Profile
+              Navigator.pushNamed(context, '/profile');
+              break;
+          }
+        },
         type: BottomNavigationBarType.fixed,
         selectedItemColor: AppTheme.primary,
         unselectedItemColor: Colors.grey[400],

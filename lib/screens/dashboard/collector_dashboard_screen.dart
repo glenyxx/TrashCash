@@ -666,7 +666,27 @@ class _CollectorDashboardScreenState extends State<CollectorDashboardScreen> {
       ),
       child: BottomNavigationBar(
         currentIndex: _currentIndex,
-        onTap: (index) => setState(() => _currentIndex = index),
+        onTap: (index) {
+          setState(() => _currentIndex = index);
+          // Navigate to respective screens
+          switch (index) {
+            case 0:
+            // Stay on dashboard (Home)
+              break;
+            case 1:
+            // Navigate to Routes/Map
+              Navigator.pushNamed(context, '/map');
+              break;
+            case 2:
+            // Navigate to History
+              Navigator.pushNamed(context, '/history');
+              break;
+            case 3:
+            // Navigate to Profile
+              Navigator.pushNamed(context, '/profile');
+              break;
+          }
+        },
         type: BottomNavigationBarType.fixed,
         selectedItemColor: AppTheme.primary,
         unselectedItemColor: Colors.grey[400],

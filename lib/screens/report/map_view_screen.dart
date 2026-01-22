@@ -12,8 +12,11 @@ class MapViewScreen extends StatefulWidget {
 }
 
 class _MapViewScreenState extends State<MapViewScreen> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final MapController _mapController = MapController();
   String _selectedFilter = 'All';
+  Map<String, dynamic>? _selectedReport;
+  bool _isFabVisible = true;
 
   // Douala, Cameroon coordinates
   final LatLng _centerPoint = LatLng(4.0511, 9.7679);
@@ -62,7 +65,6 @@ class _MapViewScreenState extends State<MapViewScreen> {
     },
   ];
 
-  Map<String, dynamic>? _selectedReport;
 
   Color _getMarkerColor(String status) {
     switch (status) {
@@ -95,6 +97,7 @@ class _MapViewScreenState extends State<MapViewScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: _scaffoldKey,
       backgroundColor: AppTheme.backgroundDark,
       body: Stack(
         children: [
@@ -106,6 +109,18 @@ class _MapViewScreenState extends State<MapViewScreen> {
               initialZoom: 13.0,
               minZoom: 10.0,
               maxZoom: 18.0,
+              onTap: (_, __) {
+                // Close detail card when tapping map
+                if (_selectedReport != null) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) {
+                      setState(() {
+                        _selectedReport = null;
+                      });
+                    }
+                  });
+                }
+              },
             ),
             children: [
               TileLayer(
@@ -123,8 +138,12 @@ class _MapViewScreenState extends State<MapViewScreen> {
                     height: 40,
                     child: GestureDetector(
                       onTap: () {
-                        setState(() {
-                          _selectedReport = report;
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (mounted) {
+                            setState(() {
+                              _selectedReport = report;
+                            });
+                          }
                         });
                       },
                       child: Container(
@@ -169,14 +188,23 @@ class _MapViewScreenState extends State<MapViewScreen> {
               bottom: 0,
               left: 0,
               right: 0,
-              child: _buildReportCard(_selectedReport!),
+              child: IgnorePointer(
+                ignoring: false,
+                child: _buildReportCard(_selectedReport!),
+              ),
             ),
 
-          // Floating Action Button
-          Positioned(
+          // Floating Action Button with AnimatedPositioned
+          AnimatedPositioned(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
             bottom: _selectedReport != null ? 280 : 100,
             right: 16,
-            child: _buildFAB(),
+            child: AnimatedScale(
+              duration: const Duration(milliseconds: 200),
+              scale: _isFabVisible ? 1.0 : 0.0,
+              child: _buildFAB(),
+            ),
           ),
         ],
       ),

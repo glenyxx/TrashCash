@@ -12,8 +12,11 @@ class EWasteLocatorScreen extends StatefulWidget {
 }
 
 class _EWasteLocatorScreenState extends State<EWasteLocatorScreen> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final MapController _mapController = MapController();
   String _selectedFilter = 'All';
+  Map<String, dynamic>? _selectedLocation;
+  bool _isFabVisible = true;
 
   // Douala, Cameroon coordinates
   final LatLng _centerPoint = LatLng(4.0511, 9.7679);
@@ -74,8 +77,6 @@ class _EWasteLocatorScreenState extends State<EWasteLocatorScreen> {
     },
   ];
 
-  Map<String, dynamic>? _selectedLocation;
-
   Color _getMarkerColor(String type) {
     switch (type) {
       case 'Official Center':
@@ -105,6 +106,7 @@ class _EWasteLocatorScreenState extends State<EWasteLocatorScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: _scaffoldKey,
       backgroundColor: AppTheme.backgroundDark,
       body: Stack(
         children: [
@@ -116,6 +118,17 @@ class _EWasteLocatorScreenState extends State<EWasteLocatorScreen> {
               initialZoom: 13.0,
               minZoom: 10.0,
               maxZoom: 18.0,
+              onTap: (_, __) {
+                if (_selectedLocation != null) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) {
+                      setState(() {
+                        _selectedLocation = null;
+                      });
+                    }
+                  });
+                }
+              },
             ),
             children: [
               TileLayer(
@@ -130,8 +143,12 @@ class _EWasteLocatorScreenState extends State<EWasteLocatorScreen> {
                     height: 50,
                     child: GestureDetector(
                       onTap: () {
-                        setState(() {
-                          _selectedLocation = location;
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (mounted) {
+                            setState(() {
+                              _selectedLocation = location;
+                            });
+                          }
                         });
                       },
                       child: Column(
@@ -190,14 +207,23 @@ class _EWasteLocatorScreenState extends State<EWasteLocatorScreen> {
               bottom: 0,
               left: 0,
               right: 0,
-              child: _buildLocationCard(_selectedLocation!),
+              child: IgnorePointer(
+                ignoring: false,
+                child: _buildLocationCard(_selectedLocation!),
+              ),
             ),
 
-          // Floating Action Button
-          Positioned(
+          // Floating Action Button with AnimatedPositioned
+          AnimatedPositioned(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
             bottom: _selectedLocation != null ? 320 : 100,
             right: 16,
-            child: _buildFAB(),
+            child: AnimatedScale(
+              duration: const Duration(milliseconds: 200),
+              scale: _isFabVisible ? 1.0 : 0.0,
+              child: _buildFAB(),
+            ),
           ),
         ],
       ),

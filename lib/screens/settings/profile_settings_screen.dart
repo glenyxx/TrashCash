@@ -39,16 +39,28 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
   ];
 
   Future<void> _pickProfileImage() async {
-    final XFile? image = await _picker.pickImage(
-      source: ImageSource.gallery,
-      maxWidth: 512,
-      imageQuality: 85,
-    );
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 512,
+        imageQuality: 85,
+      );
 
-    if (image != null) {
-      setState(() {
-        _profileImage = File(image.path);
-      });
+      if (image != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            setState(() {
+              _profileImage = File(image.path);
+            });
+          }
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error picking image: $e')),
+        );
+      }
     }
   }
 
