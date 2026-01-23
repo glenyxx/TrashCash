@@ -675,15 +675,15 @@ class _CollectorDashboardScreenState extends State<CollectorDashboardScreen> {
               break;
             case 1:
             // Navigate to Routes/Map
-              Navigator.pushNamed(context, '/map');
+              Navigator.pushNamed(context, '/map-view');
               break;
             case 2:
-            // Navigate to History
-              Navigator.pushNamed(context, '/history');
+            // Navigate to Marketplace
+              Navigator.pushNamed(context, '/buyers-marketplace');
               break;
             case 3:
             // Navigate to Profile
-              Navigator.pushNamed(context, '/profile');
+              Navigator.pushNamed(context, '/profile-settings');
               break;
           }
         },
@@ -706,9 +706,9 @@ class _CollectorDashboardScreenState extends State<CollectorDashboardScreen> {
             label: 'Routes',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.history),
-            activeIcon: Icon(Icons.history),
-            label: 'History',
+            icon: Icon(Icons.shopping_bag_outlined),
+            activeIcon: Icon(Icons.shopping_bag),
+            label: 'Marketplace',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person_outline),

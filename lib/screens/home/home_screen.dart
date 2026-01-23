@@ -467,13 +467,13 @@ class _CitizenDashboardScreenState extends State<CitizenDashboardScreen> {
             case 0: // Home - Stay on dashboard
               break;
             case 1: // Marketplace
-              Navigator.pushNamed(context, '/marketplace');
+              Navigator.pushNamed(context, '/buyers-marketplace');
               break;
             case 2: // Map
-              Navigator.pushNamed(context, '/map');
+              Navigator.pushNamed(context, '/map-view');
               break;
             case 3: // Profile
-              Navigator.pushNamed(context, '/profile');
+              Navigator.pushNamed(context, '/profile-settings');
               break;
           }
         },

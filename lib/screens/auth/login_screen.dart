@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:animate_do/animate_do.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../config/theme.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -14,16 +17,26 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   final _loginFormKey = GlobalKey<FormState>();
   final _registerFormKey = GlobalKey<FormState>();
 
-  // Controllers
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
+  // Controllers - Login
+  final _loginEmailController = TextEditingController();
+  final _loginPasswordController = TextEditingController();
+
+  // Controllers - Register
+  final _registerEmailController = TextEditingController();
+  final _registerPasswordController = TextEditingController();
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _locationController = TextEditingController();
 
-  bool _obscurePassword = true;
+  bool _obscureLoginPassword = true;
+  bool _obscureRegisterPassword = true;
   String _selectedRole = 'citizen';
   bool _agreedToTerms = false;
+  bool _isLoading = false;
+
+  // Firebase instances
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   @override
   void initState() {
@@ -34,66 +47,246 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   @override
   void dispose() {
     _tabController.dispose();
-    _emailController.dispose();
-    _passwordController.dispose();
+    _loginEmailController.dispose();
+    _loginPasswordController.dispose();
+    _registerEmailController.dispose();
+    _registerPasswordController.dispose();
     _nameController.dispose();
     _phoneController.dispose();
     _locationController.dispose();
     super.dispose();
   }
 
+  // Login function
+  Future<void> _handleLogin() async {
+    if (!_loginFormKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      // Sign in with Firebase Auth
+      final UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+        email: _loginEmailController.text.trim(),
+        password: _loginPasswordController.text,
+      );
+
+      // Get user data from Firestore
+      final userDoc = await _firestore
+          .collection('users')
+          .doc(userCredential.user!.uid)
+          .get();
+
+      if (!userDoc.exists) {
+        throw Exception('User data not found');
+      }
+
+      final userData = userDoc.data()!;
+      final String role = userData['role'] ?? 'citizen';
+
+      if (!mounted) return;
+
+      // Navigate based on role
+      _navigateBasedOnRole(role);
+    } on FirebaseAuthException catch (e) {
+      String message = 'Login failed';
+      if (e.code == 'user-not-found') {
+        message = 'No user found with this email';
+      } else if (e.code == 'wrong-password') {
+        message = 'Wrong password';
+      } else if (e.code == 'invalid-email') {
+        message = 'Invalid email address';
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  // Register function
+  Future<void> _handleRegister() async {
+    if (!_registerFormKey.currentState!.validate()) return;
+    if (!_agreedToTerms) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please agree to Terms of Service and Privacy Policy'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      // Create user with Firebase Auth
+      final UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
+        email: _registerEmailController.text.trim(),
+        password: _registerPasswordController.text,
+      );
+
+      // Create user document in Firestore
+      await _firestore.collection('users').doc(userCredential.user!.uid).set({
+        'email': _registerEmailController.text.trim(),
+        'fullName': _nameController.text.trim(),
+        'phone': '+237${_phoneController.text.trim()}',
+        'location': _locationController.text.trim(),
+        'role': _selectedRole,
+        'ecoPoints': 0,
+        'totalEarnings': 0,
+        'isVerified': false,
+        'isPhoneVerified': false,
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      if (!mounted) return;
+
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Account created successfully!'),
+          backgroundColor: AppTheme.primary,
+        ),
+      );
+
+      // Navigate based on role
+      _navigateBasedOnRole(_selectedRole);
+    } on FirebaseAuthException catch (e) {
+      String message = 'Registration failed';
+      if (e.code == 'weak-password') {
+        message = 'Password is too weak';
+      } else if (e.code == 'email-already-in-use') {
+        message = 'An account already exists with this email';
+      } else if (e.code == 'invalid-email') {
+        message = 'Invalid email address';
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  // Navigate based on user role
+  void _navigateBasedOnRole(String role) {
+    String route;
+    switch (role) {
+      case 'citizen':
+        route = '/home'; // Citizen dashboard
+        break;
+      case 'collector':
+        route = '/collector-dashboard'; // Collector dashboard
+        break;
+      case 'recycler':
+        route = '/buyer-marketplace'; // Buyer marketplace
+        break;
+      default:
+        route = '/home';
+    }
+
+    Navigator.pushReplacementNamed(context, route);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.backgroundLight,
-      body: Column(
+      body: Stack(
         children: [
-          // Custom Navbar
-          _buildNavbar(),
+          Column(
+            children: [
+              // Custom Navbar
+              _buildNavbar(),
 
-          // Main Content
-          Expanded(
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 1200),
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      final isMobile = constraints.maxWidth < 768;
+              // Main Content
+              Expanded(
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 1200),
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          final isMobile = constraints.maxWidth < 768;
 
-                      return Card(
-                        elevation: 8,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          side: const BorderSide(color: Color(0xFFE5E7EB)),
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(16),
-                          child: isMobile
-                              ? _buildFormSide()
-                              : Row(
-                            children: [
-                              // Left Side: Hero Image
-                              Expanded(
-                                flex: 5,
-                                child: _buildHeroSide(),
+                          return Card(
+                            elevation: 8,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              side: const BorderSide(color: Color(0xFFE5E7EB)),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(16),
+                              child: isMobile
+                                  ? _buildFormSide()
+                                  : Row(
+                                children: [
+                                  // Left Side: Hero Image
+                                  Expanded(
+                                    flex: 5,
+                                    child: _buildHeroSide(),
+                                  ),
+                                  // Right Side: Form
+                                  Expanded(
+                                    flex: 7,
+                                    child: _buildFormSide(),
+                                  ),
+                                ],
                               ),
-                              // Right Side: Form
-                              Expanded(
-                                flex: 7,
-                                child: _buildFormSide(),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
+                            ),
+                          );
+                        },
+                      ),
+                    ),
                   ),
                 ),
               ),
-            ),
+            ],
           ),
+
+          // Loading overlay
+          if (_isLoading)
+            Container(
+              color: Colors.black54,
+              child: const Center(
+                child: CircularProgressIndicator(
+                  color: AppTheme.primary,
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -143,7 +336,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                 Row(
                   children: [
                     TextButton(
-                      onPressed: () {},
+                      onPressed: () => Navigator.pushNamed(context, '/'),
                       child: const Text('Home'),
                     ),
                     const SizedBox(width: 24),
@@ -158,7 +351,9 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                     ),
                     const SizedBox(width: 24),
                     ElevatedButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        _tabController.animateTo(1); // Switch to Register tab
+                      },
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 16,
@@ -186,7 +381,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     return FadeIn(
       duration: const Duration(milliseconds: 800),
       child: Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           image: DecorationImage(
             image: NetworkImage(
               'https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?w=800&h=1000&fit=crop',
@@ -326,32 +521,47 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
 
               // Email Field
               _buildTextField(
-                controller: _emailController,
+                controller: _loginEmailController,
                 label: 'Email Address',
                 hint: 'your@email.com',
                 icon: Icons.mail_outline,
                 keyboardType: TextInputType.emailAddress,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter your email';
+                  }
+                  if (!value.contains('@')) {
+                    return 'Please enter a valid email';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 16),
 
               // Password Field
               _buildTextField(
-                controller: _passwordController,
+                controller: _loginPasswordController,
                 label: 'Password',
                 hint: 'Enter your password',
                 icon: Icons.lock_outline,
-                obscureText: _obscurePassword,
+                obscureText: _obscureLoginPassword,
                 suffixIcon: IconButton(
                   icon: Icon(
-                    _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                    _obscureLoginPassword ? Icons.visibility_off : Icons.visibility,
                     color: const Color(0xFF9CA3AF),
                   ),
                   onPressed: () {
                     setState(() {
-                      _obscurePassword = !_obscurePassword;
+                      _obscureLoginPassword = !_obscureLoginPassword;
                     });
                   },
                 ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter your password';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 8),
 
@@ -359,7 +569,9 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    // TODO: Implement forgot password
+                  },
                   child: const Text(
                     'Forgot Password?',
                     style: TextStyle(
@@ -376,10 +588,17 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                 width: double.infinity,
                 height: 48,
                 child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pushReplacementNamed(context, '/home');
-                  },
-                  child: const Text('Sign In'),
+                  onPressed: _isLoading ? null : _handleLogin,
+                  child: _isLoading
+                      ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                      : const Text('Sign In'),
                 ),
               ),
               const SizedBox(height: 24),
@@ -445,16 +664,31 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                 label: 'Full Name',
                 hint: 'Full Name or Company Name',
                 icon: Icons.badge_outlined,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter your name';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 16),
 
               // Email Field
               _buildTextField(
-                controller: _emailController,
+                controller: _registerEmailController,
                 label: 'Email',
                 hint: 'Email Address',
                 icon: Icons.mail_outline,
                 keyboardType: TextInputType.emailAddress,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter your email';
+                  }
+                  if (!value.contains('@')) {
+                    return 'Please enter a valid email';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 16),
 
@@ -471,6 +705,12 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                       label: 'Location',
                       hint: 'City / Area',
                       icon: Icons.location_on_outlined,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter location';
+                        }
+                        return null;
+                      },
                     ),
                   ),
                 ],
@@ -479,22 +719,31 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
 
               // Password Field
               _buildTextField(
-                controller: _passwordController,
+                controller: _registerPasswordController,
                 label: 'Password',
                 hint: 'Create Password',
                 icon: Icons.lock_outline,
-                obscureText: _obscurePassword,
+                obscureText: _obscureRegisterPassword,
                 suffixIcon: IconButton(
                   icon: Icon(
-                    _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                    _obscureRegisterPassword ? Icons.visibility_off : Icons.visibility,
                     color: const Color(0xFF9CA3AF),
                   ),
                   onPressed: () {
                     setState(() {
-                      _obscurePassword = !_obscurePassword;
+                      _obscureRegisterPassword = !_obscureRegisterPassword;
                     });
                   },
                 ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter a password';
+                  }
+                  if (value.length < 6) {
+                    return 'Password must be at least 6 characters';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 16),
 
@@ -553,12 +802,19 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                 width: double.infinity,
                 height: 48,
                 child: ElevatedButton(
-                  onPressed: _agreedToTerms
-                      ? () {
-                    Navigator.pushNamed(context, '/onboarding-welcome');
-                  }
-                      : null,
-                  child: const Text('Get Started'),
+                  onPressed: _isLoading
+                      ? null
+                      : (_agreedToTerms ? _handleRegister : null),
+                  child: _isLoading
+                      ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                      : const Text('Get Started'),
                 ),
               ),
               const SizedBox(height: 24),
@@ -626,6 +882,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     bool obscureText = false,
     Widget? suffixIcon,
     TextInputType? keyboardType,
+    String? Function(String?)? validator,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -641,11 +898,12 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
           ),
           const SizedBox(height: 8),
         ],
-        TextField(
+        TextFormField(
           controller: controller,
           obscureText: obscureText,
           keyboardType: keyboardType,
           style: const TextStyle(fontSize: 14),
+          validator: validator,
           decoration: InputDecoration(
             hintText: hint,
             prefixIcon: Icon(icon, size: 20, color: const Color(0xFF9CA3AF)),
@@ -669,10 +927,19 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
           ),
         ),
         const SizedBox(height: 8),
-        TextField(
+        TextFormField(
           controller: _phoneController,
           keyboardType: TextInputType.phone,
           style: const TextStyle(fontSize: 14),
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Enter phone';
+            }
+            if (value.length != 9) {
+              return 'Invalid';
+            }
+            return null;
+          },
           decoration: InputDecoration(
             hintText: '6XX XXX XXX',
             prefixIcon: const Icon(Icons.phone, size: 20, color: Color(0xFF9CA3AF)),
@@ -704,7 +971,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Text(
-            'Or register with',
+            'Or continue with',
             style: Theme.of(context).textTheme.bodySmall,
           ),
         ),
@@ -718,7 +985,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       children: [
         Expanded(
           child: OutlinedButton.icon(
-            onPressed: () {},
+            onPressed: () {
+            },
             icon: Image.network(
               'https://www.google.com/favicon.ico',
               width: 20,
@@ -733,7 +1001,12 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         const SizedBox(width: 12),
         Expanded(
           child: OutlinedButton.icon(
-            onPressed: () {},
+            onPressed: () async{
+              final LoginResult result = await FacebookAuth.instance.login();
+              if (result.status == LoginStatus.success) {
+                // Handle success
+              }
+            },
             icon: const Icon(Icons.facebook, color: Color(0xFF1877F2)),
             label: const Text('Facebook'),
             style: OutlinedButton.styleFrom(
