@@ -64,6 +64,12 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     return prefs.getBool('onboarding_complete') ?? false;
   }
 
+  // Save user role for onboarding
+  Future<void> _saveUserRole(String role) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('user_role', role);
+  }
+
   // Login function
   Future<void> _handleLogin() async {
     if (!_loginFormKey.currentState!.validate()) return;
@@ -90,6 +96,9 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       final userData = userDoc.data()!;
       final String role = userData['role'] ?? 'citizen';
 
+      // Save role for onboarding
+      await _saveUserRole(role);
+
       if (!mounted) return;
 
       // Check if onboarding is complete
@@ -100,7 +109,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         _navigateToDashboard(role);
       } else {
         // Go to onboarding first
-        _navigateToOnboarding(role);
+        Navigator.pushReplacementNamed(context, '/onboarding-welcome');
       }
     } on FirebaseAuthException catch (e) {
       String message = 'Login failed';
@@ -171,6 +180,9 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
+      // Save role for onboarding screens
+      await _saveUserRole(_selectedRole);
+
       if (!mounted) return;
 
       // Show success message
@@ -182,7 +194,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       );
 
       // Navigate based on role
-      _navigateToOnboarding(_selectedRole);
+      Navigator.pushReplacementNamed(context, '/onboarding-welcome');
     } on FirebaseAuthException catch (e) {
       String message = 'Registration failed';
       if (e.code == 'weak-password') {
@@ -213,15 +225,6 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
-  }
-
-  // Navigate based on user role
-  void _navigateToOnboarding(String role) {
-    Navigator.pushReplacementNamed(
-      context,
-      '/onboarding-flow',
-      arguments: {'userRole': role},
-    );
   }
 
     // Navigate to appropriate dashboard based on role
