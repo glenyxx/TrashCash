@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../config/theme.dart';
 
@@ -57,6 +58,12 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     super.dispose();
   }
 
+  // Check if user has completed onboarding
+  Future<bool> _hasCompletedOnboarding() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('onboarding_complete') ?? false;
+  }
+
   // Login function
   Future<void> _handleLogin() async {
     if (!_loginFormKey.currentState!.validate()) return;
@@ -85,8 +92,16 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
 
       if (!mounted) return;
 
-      // Navigate based on role
-      _navigateBasedOnRole(role);
+      // Check if onboarding is complete
+      final hasOnboarded = await _hasCompletedOnboarding();
+
+      if (hasOnboarded) {
+        // Go directly to dashboard
+        _navigateToDashboard(role);
+      } else {
+        // Go to onboarding first
+        _navigateToOnboarding(role);
+      }
     } on FirebaseAuthException catch (e) {
       String message = 'Login failed';
       if (e.code == 'user-not-found') {
@@ -167,7 +182,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       );
 
       // Navigate based on role
-      _navigateBasedOnRole(_selectedRole);
+      _navigateToOnboarding(_selectedRole);
     } on FirebaseAuthException catch (e) {
       String message = 'Registration failed';
       if (e.code == 'weak-password') {
@@ -201,24 +216,33 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   }
 
   // Navigate based on user role
-  void _navigateBasedOnRole(String role) {
-    String route;
-    switch (role) {
-      case 'citizen':
-        route = '/home'; // Citizen dashboard
-        break;
-      case 'collector':
-        route = '/collector-dashboard'; // Collector dashboard
-        break;
-      case 'recycler':
-        route = '/buyer-marketplace'; // Buyer marketplace
-        break;
-      default:
-        route = '/home';
-    }
-
-    Navigator.pushReplacementNamed(context, route);
+  void _navigateToOnboarding(String role) {
+    Navigator.pushReplacementNamed(
+      context,
+      '/onboarding-flow',
+      arguments: {'userRole': role},
+    );
   }
+
+    // Navigate to appropriate dashboard based on role
+    void _navigateToDashboard(String role) {
+      String route;
+      switch (role) {
+        case 'citizen':
+          route = '/home';
+          break;
+        case 'collector':
+          route = '/collector-dashboard';
+          break;
+        case 'recycler':
+          route = '/buyer-marketplace';
+          break;
+        default:
+          route = '/home';
+      }
+
+      Navigator.pushReplacementNamed(context, route);
+    }
 
   @override
   Widget build(BuildContext context) {
